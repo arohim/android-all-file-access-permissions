@@ -14,8 +14,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
@@ -23,13 +23,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import com.him.sama.storagepermissionandroid12.ui.theme.StoragePermissionAndroid12Theme
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    private val fileNames = MutableStateFlow<String>("")
 
     private val REQUEST_CODE = 1
 
@@ -45,7 +50,7 @@ class MainActivity : ComponentActivity() {
             if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.data?.let { uri ->
                     val file = uri.path?.let { File(it) }
-                    Toast.makeText(this, file?.path, Toast.LENGTH_LONG).show()
+                    fileNames.value = "${file?.path}"
                 }
             }
         }
@@ -64,17 +69,23 @@ class MainActivity : ComponentActivity() {
         setContent {
             StoragePermissionAndroid12Theme {
                 // A surface container using the 'background' color from the theme
+                val fileNameState by fileNames.collectAsState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Android")
-                    Button(
-                        modifier = Modifier.wrapContentSize(),
-                        onClick = {
-                            openFolderBrowser()
-                        }) {
-                        Text(text = "File Picker")
+                    Column(
+                        modifier = Modifier,
+                    ) {
+                        Greeting("Android")
+                        Button(
+                            modifier = Modifier.wrapContentSize(),
+                            onClick = {
+                                openFolderBrowser()
+                            }) {
+                            Text(text = "File Picker")
+                        }
+                        Text(text = fileNameState)
                     }
                 }
             }
@@ -82,10 +93,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openFolderBrowser() {
-        val intent = OpenDocument().createIntent(
-            this,
-            arrayOf("text/plain", "video/*")
-        )
+        val mimeTypes = arrayOf("text/plain", "video/*")
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         requestFileLauncher.launch(intent)
     }
 
