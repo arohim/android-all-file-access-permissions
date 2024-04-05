@@ -1,6 +1,7 @@
 package com.him.sama.storagepermissionandroid12
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,9 +14,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,17 +27,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import com.him.sama.storagepermissionandroid12.ui.theme.StoragePermissionAndroid12Theme
+import java.io.File
 
 class MainActivity : ComponentActivity() {
 
-    val REQUEST_CODE = 1
+    private val REQUEST_CODE = 1
 
     private val storagePermissionActivityLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
+        StartActivityForResult()
     ) {
         // Granted - access external storage code here
         readFiles()
     }
+
+    private val requestFileLauncher =
+        registerForActivityResult(StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    val file = uri.path?.let { File(it) }
+                    Toast.makeText(this, file?.path, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,9 +69,24 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Greeting("Android")
+                    Button(
+                        modifier = Modifier.wrapContentSize(),
+                        onClick = {
+                            openFolderBrowser()
+                        }) {
+                        Text(text = "File Picker")
+                    }
                 }
             }
         }
+    }
+
+    private fun openFolderBrowser() {
+        val intent = OpenDocument().createIntent(
+            this,
+            arrayOf("text/plain", "video/*")
+        )
+        requestFileLauncher.launch(intent)
     }
 
     private fun readFiles() {
@@ -97,6 +126,7 @@ class MainActivity : ComponentActivity() {
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
+
 }
 
 @Composable
